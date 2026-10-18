@@ -1,0 +1,8 @@
+{
+  "name": "Leads AK47 Machine",
+  "description": "High-powered AI lead scraping, website SEO audit, ROI pitch generator, and automated multi-channel outreach engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

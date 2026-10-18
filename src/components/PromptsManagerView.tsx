@@ -107,29 +107,36 @@ export const PromptsManagerView: React.FC<PromptsManagerViewProps> = ({
   return (
     <div className="space-y-6 pb-12 max-w-5xl mx-auto">
       {/* Header Banner - Light Theme */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
+            <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
               Prompt Engineering
             </span>
-            <span className="text-xs text-slate-500">PDF Report & Pitch AI Prompts</span>
+            <span className="text-xs text-slate-500 font-medium">PDF Report & Pitch AI Prompts</span>
           </div>
           <h2 className="text-2xl font-black text-slate-900 mt-1 font-['Outfit']">
             AI Prompts Library & Customizer
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
+          <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Configure the instructions AI uses to audit websites, pinpoint negative ranking issues, and calculate break-even ROI in {settings.currency || '₹'}.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreating(!isCreating)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{isCreating ? 'Cancel' : 'Add New Prompt'}</span>
-        </button>
+        {/* Button shifted below description instead of on the right side */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
+          <button
+            onClick={() => setIsCreating(!isCreating)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isCreating ? 'Cancel Creation' : 'Add New Custom Prompt'}</span>
+          </button>
+
+          <span className="text-xs text-slate-400 font-medium ml-auto hidden sm:inline">
+            Active Prompt ID: <strong className="text-slate-800">{settings.activePromptId}</strong>
+          </span>
+        </div>
       </div>
 
       {/* New Prompt Creator Modal/Drawer */}

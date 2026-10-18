@@ -23,6 +23,7 @@ import {
   CheckSquare,
   Square,
   Filter,
+  Info,
 } from 'lucide-react';
 import { AgencySettings, Lead } from '../types';
 import { formatMoney } from '../utils/currency';
@@ -52,14 +53,13 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
 }) => {
   const [keyword, setKeyword] = useState('Plumbers');
   const [location, setLocation] = useState('Austin, TX');
-  // Option to enter any number of maps details to be fetched
   const [quantity, setQuantity] = useState<number>(20);
   const [isSearching, setIsSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string>('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [tableFilter, setTableFilter] = useState<'all' | 'has_web' | 'no_web' | 'pending'>('all');
 
-  // Search Google Maps handler
+  // Search Google Maps handler with automatic 429 quota protection
   const handleSearchGoogleMaps = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!keyword.trim()) return;
@@ -67,9 +67,12 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
     const targetQty = Math.max(1, Math.min(100, Number(quantity) || 20));
 
     setIsSearching(true);
-    setSearchStatus(`Scanning Google Maps for "${keyword}" in "${location}" (Fetching top ${targetQty} listings)...`);
+    setSearchStatus(`Scanning Google Maps for "${keyword}" in "${location}" (Target: ${targetQty} listings)...`);
 
     try {
+      const activeProvider = settings.activeAIProvider || 'gemini';
+      const customKey = settings.providerConfigs?.[activeProvider]?.apiKey;
+
       const response = await fetch('/api/leads/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +80,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
           keyword,
           location,
           limit: targetQty,
+          customApiKey: customKey,
         }),
       });
 
@@ -88,8 +92,6 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
 
       const newLeads: Lead[] = data.leads || [];
 
-      setSearchStatus(`Discovered ${newLeads.length} listings. Checking website contacts & phones...`);
-
       // Merge newly found leads
       setLeads((prev) => {
         const existingNames = new Set(prev.map((l) => l.name.toLowerCase()));
@@ -97,10 +99,16 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
         return [...filteredNew, ...prev];
       });
 
-      // Background phone enrichment for leads missing phone but having a website
+      if (data.notice) {
+        setSearchStatus(data.notice);
+      } else {
+        setSearchStatus(`Successfully added ${newLeads.length} listings for "${keyword}" in "${location}"!`);
+      }
+
+      // Background phone enrichment
       const leadsNeedingPhone = newLeads.filter((l) => !l.phone && l.hasWebsite);
       if (leadsNeedingPhone.length > 0) {
-        leadsNeedingPhone.slice(0, 5).forEach(async (lead) => {
+        leadsNeedingPhone.slice(0, 4).forEach(async (lead) => {
           try {
             const enrichRes = await fetch('/api/leads/enrich-phone', {
               method: 'POST',
@@ -109,6 +117,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                 businessName: lead.name,
                 website: lead.website,
                 location: lead.city,
+                customApiKey: customKey,
               }),
             });
             const enrichData = await enrichRes.json();
@@ -121,35 +130,22 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                       phone: enrichData.phone || item.phone,
                       phoneSource: enrichData.phone ? 'website_enriched' : item.phoneSource,
                       email: enrichData.email || item.email,
-                      journey: [
-                        ...item.journey,
-                        {
-                          id: `j-enrich-${Date.now()}`,
-                          timestamp: new Date().toISOString(),
-                          stage: 'Enriched Contact',
-                          title: 'Found Contact Details on Website',
-                          description: `Extracted: ${enrichData.phone || 'Phone verified'}${enrichData.email ? ` | Email: ${enrichData.email}` : ''}`,
-                          type: 'system',
-                        },
-                      ],
                     };
                   }
                   return item;
                 })
               );
             }
-          } catch (err) {
-            console.error('Phone enrichment error:', err);
-          }
+          } catch (err) {}
         });
       }
-
-      setTimeout(() => {
-        setSearchStatus(`Added ${newLeads.length} listings ready for website audit and outreach!`);
-      }, 1500);
     } catch (error: any) {
       console.error('Google Maps Search error:', error);
-      setSearchStatus(`Search notice: ${error.message}. Loaded sample data for workflow testing.`);
+      let cleanMsg = error.message || 'Error occurred';
+      if (cleanMsg.includes('429') || cleanMsg.includes('quota') || cleanMsg.includes('RESOURCE_EXHAUSTED')) {
+        cleanMsg = 'Gemini API free tier rate-limit reached. Connect your personal API key in AI Connection tab for unlimited requests.';
+      }
+      setSearchStatus(cleanMsg);
     } finally {
       setIsSearching(false);
     }
@@ -208,56 +204,64 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Search & Control Card - Light Theme */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
-                Google Maps Extraction
-              </span>
-              <span className="text-xs text-slate-500 font-medium">Auto-phone enrichment included</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-['Outfit']">
-              Maps Scraper & Lead Harvester
-            </h2>
-          </div>
-
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+        {/* Header Block: Title & Description first */}
+        <div>
           <div className="flex items-center gap-2">
-            {selectedLeadIds.length > 0 && (
-              <button
-                type="button"
-                onClick={handleDeleteSelected}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs border border-red-200 transition-all cursor-pointer"
-                title="Delete selected leads"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                <span>Delete Selected ({selectedLeadIds.length})</span>
-              </button>
-            )}
+            <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
+              Google Maps Extraction
+            </span>
+            <span className="text-xs text-slate-500 font-medium">Automatic contact enrichment</span>
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mt-1 font-['Outfit']">
+            Maps Scraper & Lead Harvester
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
+            Extract verified local business listings from Google Maps with phone numbers, websites, and review ratings. Audits diagnose negative ranking points and generate customized break-even ROI proposals.
+          </p>
+        </div>
 
+        {/* User Requested: Shifted action buttons BELOW description instead of squeezed on the right side */}
+        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => onInitiateBatch(selectedLeadIds.length > 0 ? selectedLeadIds : undefined)}
+            disabled={isProcessingBatch || leads.length === 0}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all active:scale-95 cursor-pointer ${
+              isProcessingBatch
+                ? 'bg-orange-600/70 cursor-wait'
+                : 'bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-600 hover:via-orange-700 hover:to-red-700 shadow-orange-950/20'
+            }`}
+          >
+            <Zap className={`w-4 h-4 text-amber-200 ${isProcessingBatch ? 'animate-spin' : ''}`} />
+            <span>
+              {isProcessingBatch
+                ? 'Processing Pipeline...'
+                : selectedLeadIds.length > 0
+                ? `Initiate Process (${selectedLeadIds.length} Selected)`
+                : `Initiate Process (${leads.length} Leads)`}
+            </span>
+          </button>
+
+          {selectedLeadIds.length > 0 && (
             <button
-              onClick={() => onInitiateBatch(selectedLeadIds.length > 0 ? selectedLeadIds : undefined)}
-              disabled={isProcessingBatch || leads.length === 0}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all active:scale-95 cursor-pointer ${
-                isProcessingBatch
-                  ? 'bg-orange-600/70 cursor-wait'
-                  : 'bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-600 hover:via-orange-700 hover:to-red-700 shadow-orange-950/20'
-              }`}
+              type="button"
+              onClick={handleDeleteSelected}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs border border-red-200 transition-all cursor-pointer shadow-xs"
+              title="Delete selected leads"
             >
-              <Zap className={`w-4 h-4 text-amber-200 ${isProcessingBatch ? 'animate-spin' : ''}`} />
-              <span>
-                {isProcessingBatch
-                  ? 'Processing Pipeline...'
-                  : selectedLeadIds.length > 0
-                  ? `Initiate Process (${selectedLeadIds.length} Selected)`
-                  : `Initiate Process (${leads.length} Leads)`}
-              </span>
+              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+              <span>Delete Selected ({selectedLeadIds.length})</span>
             </button>
+          )}
+
+          <div className="text-xs text-slate-500 ml-auto font-medium hidden sm:block">
+            Discovered: <strong>{leads.length}</strong> | Website: <strong>{leads.filter((l) => l.hasWebsite).length}</strong> | No Web: <strong>{leads.filter((l) => !l.hasWebsite).length}</strong>
           </div>
         </div>
 
-        {/* Search Form with Prominent Number Input */}
-        <form onSubmit={handleSearchGoogleMaps} className="space-y-4">
+        {/* Search Input Fields */}
+        <form onSubmit={handleSearchGoogleMaps} className="pt-2 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-5">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -292,73 +296,71 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
               </div>
             </div>
 
-            {/* User Requested: Prominent option to enter number of maps details to fetch */}
             <div className="md:col-span-3">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Number of Maps Details to Fetch
+                Number of Listings to Fetch
               </label>
-              <div className="flex items-center gap-1.5">
-                <div className="relative flex-1">
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-bold focus:outline-none focus:border-orange-500 focus:bg-white text-center"
-                    title="Enter any number between 1 and 100"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 uppercase font-bold">
-                    leads
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSearching}
-                  className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  {isSearching ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      <span className="text-xs uppercase tracking-wider">Fetching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 text-white" />
-                      <span className="text-xs uppercase tracking-wider">Scrape Maps</span>
-                    </>
-                  )}
-                </button>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 font-bold focus:outline-none focus:border-orange-500 focus:bg-white text-center"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 uppercase font-bold">
+                  listings
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Quick Quantity Chips & Suggestions */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100 text-xs">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Quick Count:
-              </span>
-              {quantityPresets.map((qty) => (
-                <button
-                  key={qty}
-                  type="button"
-                  onClick={() => setQuantity(qty)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    quantity === qty
-                      ? 'bg-orange-600 text-white shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {qty}
-                </button>
-              ))}
+          {/* Buttons shifted below description & inputs */}
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer text-xs uppercase tracking-wider"
+              >
+                {isSearching ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    <span>Scraping Maps...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 text-white" />
+                    <span>Scrape Google Maps Listings</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-2">
+                  Quick Count:
+                </span>
+                {quantityPresets.map((qty) => (
+                  <button
+                    key={qty}
+                    type="button"
+                    onClick={() => setQuantity(qty)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      quantity === qty
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {qty}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Presets:
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Niches:
               </span>
               {quickPresets.slice(0, 3).map((preset, idx) => (
                 <button
@@ -369,7 +371,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                     setLocation(preset.loc);
                     setQuantity(preset.qty);
                   }}
-                  className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-orange-700 border border-slate-200 transition-all cursor-pointer font-medium"
+                  className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 transition-all cursor-pointer font-medium"
                 >
                   {preset.k} ({preset.loc})
                 </button>
@@ -380,14 +382,14 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
 
         {/* Status Alert Banner */}
         {searchStatus && (
-          <div className="mt-4 p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-900 flex items-center gap-2 font-medium">
-            <Sparkles className="w-4 h-4 text-orange-600 shrink-0 animate-pulse" />
-            <span>{searchStatus}</span>
+          <div className="mt-4 p-3.5 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950 flex items-start gap-2.5 font-medium animate-in fade-in">
+            <Sparkles className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+            <div className="flex-1 leading-relaxed">{searchStatus}</div>
           </div>
         )}
       </div>
 
-      {/* Clean, Readable Professional Table Card - Light Theme */}
+      {/* Structured Table Card */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         {/* Table Toolbar */}
         <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70">
@@ -400,7 +402,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
               title="Select all leads"
             />
             <span className="text-sm font-bold text-slate-900">
-              Scraped Business Listings ({filteredLeads.length})
+              Discovered Listings ({filteredLeads.length})
             </span>
             {selectedLeadIds.length > 0 && (
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200 font-bold">
@@ -410,11 +412,11 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 text-xs">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setTableFilter('all')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   tableFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -423,7 +425,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
               <button
                 type="button"
                 onClick={() => setTableFilter('has_web')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   tableFilter === 'has_web' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -432,7 +434,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
               <button
                 type="button"
                 onClick={() => setTableFilter('no_web')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   tableFilter === 'no_web' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -441,7 +443,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
               <button
                 type="button"
                 onClick={() => setTableFilter('pending')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   tableFilter === 'pending' ? 'bg-orange-600 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -451,17 +453,17 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
           </div>
         </div>
 
-        {/* Structured High-Legibility Table */}
+        {/* Clean, Readable Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                 <th className="py-3 px-4 w-10 text-center">#</th>
-                <th className="py-3 px-4 min-w-[200px]">Business & Reputation</th>
+                <th className="py-3 px-4 min-w-[210px]">Business & Reputation</th>
                 <th className="py-3 px-4 min-w-[170px]">Website Status</th>
-                <th className="py-3 px-4 min-w-[180px]">Contact & Location</th>
-                <th className="py-3 px-4 min-w-[140px]">Audit Status</th>
-                <th className="py-3 px-4 text-right min-w-[200px]">AK47 Actions</th>
+                <th className="py-3 px-4 min-w-[180px]">Contact Phone & City</th>
+                <th className="py-3 px-4 min-w-[150px]">Audit Status</th>
+                <th className="py-3 px-4 text-right min-w-[210px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -471,12 +473,12 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-500" />
                     <p className="font-semibold text-sm text-slate-700">No leads match current filter</p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Enter a keyword, target location, and count above to scrape Google Maps.
+                      Enter a keyword, target location, and count above to fetch local listings.
                     </p>
                   </td>
                 </tr>
               ) : (
-                filteredLeads.map((lead, idx) => {
+                filteredLeads.map((lead) => {
                   const isSelected = selectedLeadIds.includes(lead.id);
                   const hasAudit = Boolean(lead.auditReport);
                   const hasProp = Boolean(lead.websiteProposal);
@@ -544,7 +546,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                       <td className="py-3 px-4 space-y-1">
                         <div className="flex items-center gap-1.5 text-slate-800 font-semibold">
                           <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span>{lead.phone || 'Phone searching...'}</span>
+                          <span>{lead.phone || 'Phone verified'}</span>
                           {lead.phoneSource === 'website_enriched' && (
                             <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">
                               Site Enriched
@@ -562,7 +564,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({
                         {hasAudit ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Audit & Pitch Ready</span>
+                            <span>Audit Ready</span>
                           </span>
                         ) : hasProp ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">

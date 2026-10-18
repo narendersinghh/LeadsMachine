@@ -191,58 +191,62 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Control Bar - Light Theme Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
-                Pipeline Automation
-              </span>
-              <span className="text-xs text-slate-500 font-medium">Multi-channel response tracking</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-['Outfit'] flex items-center gap-2">
-              <Layers className="w-5 h-5 text-orange-600" />
-              <span>Lead Journey CRM & Activity Pipeline</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Select, manage, and track each prospect from Google Maps discovery through audits, pitches, and closed deals.
-            </p>
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
+              Pipeline Automation
+            </span>
+            <span className="text-xs text-slate-500 font-medium">Multi-channel response tracking</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-['Outfit'] flex items-center gap-2">
+            <Layers className="w-5 h-5 text-orange-600" />
+            <span>Lead Journey CRM & Activity Pipeline</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            Select, manage, and track each prospect from Google Maps discovery through audits, pitches, and closed deals.
+          </p>
+        </div>
+
+        {/* Buttons shifted below description instead of on the right side */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'cards' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Cards View
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'table' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Table View
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* User Requested: Select and delete entries in Journey CRM */}
-            {selectedIds.length > 0 && (
-              <button
-                type="button"
-                onClick={handleDeleteSelected}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                title="Delete selected leads"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Selected ({selectedIds.length})</span>
-              </button>
-            )}
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleDeleteSelected}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+              title="Delete selected leads"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete Selected ({selectedIds.length})</span>
+            </button>
+          )}
 
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setViewMode('cards')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'cards' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Cards View
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'table' ? 'bg-orange-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Table View
-              </button>
-            </div>
+          <div className="text-xs text-slate-500 ml-auto font-medium hidden sm:flex items-center gap-3">
+            <span>Total: <strong>{leads.length}</strong></span>
+            <span>Audited: <strong>{leads.filter((l) => l.status === 'audit_ready' || l.status === 'proposal_ready').length}</strong></span>
+            <span>Contacted: <strong>{leads.filter((l) => l.status.startsWith('contacted')).length}</strong></span>
           </div>
         </div>
 

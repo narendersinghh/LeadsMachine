@@ -242,7 +242,7 @@ export const AIConnectionView: React.FC<AIConnectionViewProps> = ({ settings, se
   return (
     <div className="space-y-6 pb-16 max-w-5xl mx-auto">
       {/* Header Banner - Light Theme */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
@@ -253,19 +253,26 @@ export const AIConnectionView: React.FC<AIConnectionViewProps> = ({ settings, se
           <h2 className="text-2xl font-black text-slate-900 mt-1 font-['Outfit']">
             AI Connection & Model Engine
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
             Select standard presets or enter any custom model identifier with custom endpoints, temperature, and tokens.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSaveConfigs}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-        >
-          <Check className="w-4 h-4" />
-          <span>{savedSuccess ? 'Saved All Configurations!' : 'Save AI Settings'}</span>
-        </button>
+        {/* Button shifted below description instead of on the right side */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={handleSaveConfigs}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <Check className="w-4 h-4" />
+            <span>{savedSuccess ? 'Saved All Configurations!' : 'Save AI Settings'}</span>
+          </button>
+
+          <span className="text-xs text-slate-400 font-medium">
+            Active Provider: <strong className="text-slate-800 capitalize">{activeProvider}</strong>
+          </span>
+        </div>
       </div>
 
       {savedSuccess && (

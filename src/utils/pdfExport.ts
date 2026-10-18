@@ -332,3 +332,5 @@ export function downloadWebsiteProposalPdf(lead: Lead, proposal: WebsiteProposal
   const cleanFilename = `${lead.name.replace(/[^a-zA-Z0-9]/g, '_')}_Website_Proposal.pdf`;
   doc.save(cleanFilename);
 }
+
+export const downloadProposalPdf = downloadWebsiteProposalPdf;

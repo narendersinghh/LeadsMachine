@@ -273,8 +273,8 @@ export default function App() {
   const pendingCount = leads.filter((l) => l.status === 'discovered' && !l.auditReport && !l.websiteProposal).length;
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* SaaS Left Sidebar Panel */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* SaaS Left Sidebar Panel - Kept in Dark Theme per user request */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -284,16 +284,16 @@ export default function App() {
         isBatchProcessing={isBatchProcessing}
       />
 
-      {/* Main SaaS Content Workspace */}
-      <div className="flex-1 ml-20 sm:ml-64 flex flex-col min-h-screen transition-all duration-300">
-        {/* Top SaaS Status Header */}
-        <header className="h-18 px-6 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-30 flex items-center justify-between">
+      {/* Main SaaS Content Workspace - Light Theme */}
+      <div className="flex-1 ml-20 sm:ml-64 flex flex-col min-h-screen transition-all duration-300 bg-slate-50">
+        {/* Top Header */}
+        <header className="h-18 px-6 bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600">
                 Workspace / {settings.agencyName}
               </span>
-              <h2 className="text-base font-extrabold text-slate-100 capitalize font-['Outfit']">
+              <h2 className="text-base font-extrabold text-slate-900 capitalize font-['Outfit']">
                 {activeTab.replace('-', ' ')}
               </h2>
             </div>
@@ -301,29 +301,29 @@ export default function App() {
 
           {/* Quick Metrics Bar */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-4 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs">
-              <div className="flex items-center gap-1.5 text-slate-300">
-                <Layers className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-slate-400">Total:</span>
-                <span className="font-bold text-slate-100">{totalLeads}</span>
+            <div className="hidden lg:flex items-center gap-4 bg-slate-100/90 border border-slate-200 rounded-xl px-4 py-2 text-xs">
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <Layers className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-slate-500 font-medium">Total:</span>
+                <span className="font-bold text-slate-900">{totalLeads}</span>
               </div>
-              <div className="h-3 w-px bg-slate-800"></div>
-              <div className="flex items-center gap-1.5 text-slate-300">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-                <span className="text-slate-400">Audited:</span>
-                <span className="font-bold text-orange-400">{auditedCount}</span>
+              <div className="h-3 w-px bg-slate-200"></div>
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <Flame className="w-3.5 h-3.5 text-orange-600" />
+                <span className="text-slate-500 font-medium">Audited:</span>
+                <span className="font-bold text-orange-600">{auditedCount}</span>
               </div>
-              <div className="h-3 w-px bg-slate-800"></div>
-              <div className="flex items-center gap-1.5 text-slate-300">
-                <Send className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-slate-400">Contacted:</span>
-                <span className="font-bold text-blue-400">{contactedCount}</span>
+              <div className="h-3 w-px bg-slate-200"></div>
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <Send className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-slate-500 font-medium">Contacted:</span>
+                <span className="font-bold text-blue-600">{contactedCount}</span>
               </div>
-              <div className="h-3 w-px bg-slate-800"></div>
-              <div className="flex items-center gap-1.5 text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-slate-400">Won:</span>
-                <span className="font-bold text-emerald-400">{wonCount}</span>
+              <div className="h-3 w-px bg-slate-200"></div>
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-slate-500 font-medium">Won:</span>
+                <span className="font-bold text-emerald-600">{wonCount}</span>
               </div>
             </div>
 
@@ -331,10 +331,10 @@ export default function App() {
               <button
                 onClick={() => handleInitiateBatch()}
                 disabled={isBatchProcessing}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-lg transition-all ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all cursor-pointer ${
                   isBatchProcessing
                     ? 'bg-orange-600/70 cursor-wait'
-                    : 'bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-400 hover:to-red-500 active:scale-95 shadow-orange-950/60'
+                    : 'bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-600 hover:to-red-700 active:scale-95 shadow-orange-950/20'
                 }`}
               >
                 <Zap className={`w-3.5 h-3.5 text-amber-200 ${isBatchProcessing ? 'animate-spin' : ''}`} />

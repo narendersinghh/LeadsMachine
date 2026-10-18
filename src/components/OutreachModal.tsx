@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AgencySettings, Lead, LeadStatus } from '../types';
+import { formatMoney } from '../utils/currency';
 
 interface OutreachModalProps {
   lead: Lead | null;
@@ -31,12 +32,14 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
   onClose,
   settings,
   setLeads,
-  initialChannel = 'email',
+  initialChannel = 'whatsapp',
 }) => {
   if (!lead) return null;
 
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp'>(initialChannel);
   const [whatsAppType, setWhatsAppType] = useState<'first_touch' | 'follow_up'>('first_touch');
+
+  const curSymbol = settings.currency || '₹';
 
   // Fill tags helper
   const replaceTags = (text: string) => {
@@ -45,7 +48,7 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
       .replace(/{{category}}/g, lead.category)
       .replace(/{{location}}/g, lead.city || lead.address || 'your city')
       .replace(/{{agency_name}}/g, settings.agencyName)
-      .replace(/{{currency}}/g, settings.currency || '₹')
+      .replace(/{{currency}}/g, curSymbol)
       .replace(/{{annual_fee}}/g, (settings.yearlyFee || 35000).toLocaleString());
   };
 
@@ -88,7 +91,6 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
   // Helper to sanitize phone for WhatsApp wa.me links
   const getCleanPhoneDigits = (rawPhone: string) => {
     const cleaned = rawPhone.replace(/\D/g, '');
-    // If 10 digits and starts with 9/8/7/6 (India), prepend 91 if needed
     if (cleaned.length === 10) {
       if (['9', '8', '7', '6'].includes(cleaned[0])) {
         return `91${cleaned}`;
@@ -139,11 +141,11 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
                 id: `j-outreach-${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 stage: channel === 'email' ? 'Contacted (Email)' : 'Contacted (WhatsApp)',
-                title: `Dispatched ${channel.toUpperCase()} Message (${whatsAppType === 'first_touch' ? 'First Warm Touch' : 'Follow-Up'})`,
+                title: `Sent ${channel.toUpperCase()} Message (${whatsAppType === 'first_touch' ? 'Cold Icebreaker' : 'Follow-Up'})`,
                 description:
                   channel === 'email'
                     ? `Sent email to ${recipientEmail || 'prospect'}. Subject: "${emailSubject}"`
-                    : `Sent WhatsApp message to ${recipientPhone}: "${whatsAppMessage.slice(0, 80)}..."`,
+                    : `Dispatched WhatsApp message to ${recipientPhone}: "${whatsAppMessage.slice(0, 80)}..."`,
                 type: channel,
               },
             ],
@@ -169,7 +171,33 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
                 timestamp: new Date().toISOString(),
                 stage: 'Client Replied',
                 title: 'Prospect Replied to Icebreaker!',
-                description: 'Client responded to WhatsApp/email. Ready for follow-up audit delivery.',
+                description: 'Client responded to message. Ready for follow-up audit delivery.',
+                type: 'status_change',
+              },
+            ],
+          };
+        }
+        return l;
+      })
+    );
+  };
+
+  const handleMarkMeetingBooked = () => {
+    setLeads((prev) =>
+      prev.map((l) => {
+        if (l.id === lead.id) {
+          return {
+            ...l,
+            status: 'meeting_booked',
+            updatedAt: new Date().toISOString(),
+            journey: [
+              ...l.journey,
+              {
+                id: `j-meet-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                stage: 'Meeting Booked',
+                title: 'Discovery Call Scheduled!',
+                description: `Arranged strategy session with ${lead.name}.`,
                 type: 'status_change',
               },
             ],
@@ -200,8 +228,8 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
                 id: `j-won-${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 stage: 'Deal Won',
-                title: '🎉 Client Signed & Deal Won!',
-                description: `Successfully closed ${lead.name} for ${settings.currency || '₹'}${settings.yearlyFee.toLocaleString()}/yr agency retainer!`,
+                title: '🎉 Client Signed & Retainer Won!',
+                description: `Successfully closed ${lead.name} for ${curSymbol}${settings.yearlyFee.toLocaleString()}/yr retainer!`,
                 type: 'status_change',
               },
             ],
@@ -213,19 +241,19 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm flex justify-center p-3 sm:p-6">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex justify-center p-3 sm:p-6">
+      <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xs">
               <Send className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-100 text-sm font-['Outfit']">
+              <h3 className="font-extrabold text-slate-900 text-sm font-['Outfit']">
                 Multi-Channel Outreach Hub
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 {lead.name} • {lead.city}
               </p>
             </div>
@@ -233,21 +261,21 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+            className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-800 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Channel Selector Tabs */}
-        <div className="p-4 bg-slate-950/60 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="p-4 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveChannel('whatsapp')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeChannel === 'whatsapp'
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -256,223 +284,225 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
 
             <button
               onClick={() => setActiveChannel('email')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeChannel === 'email'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
               }`}
             >
               <Mail className="w-4 h-4" />
-              <span>Cold Email Outreach</span>
+              <span>Email Pitch</span>
             </button>
           </div>
 
-          <span className="text-[11px] text-slate-400 font-semibold hidden sm:inline">
-            Status: <span className="text-orange-400 capitalize">{lead.status.replace('_', ' ')}</span>
-          </span>
+          <div className="text-right">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Current Stage
+            </span>
+            <span className="text-xs font-bold text-slate-800 capitalize">
+              {lead.status.replace('_', ' ')}
+            </span>
+          </div>
         </div>
 
-        {/* Form Body */}
-        <div className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
-          {activeChannel === 'whatsapp' ? (
-            /* WhatsApp Channel */
+        {/* Content Body */}
+        <div className="p-6 space-y-5 bg-white">
+          {/* WHATSAPP TAB */}
+          {activeChannel === 'whatsapp' && (
             <div className="space-y-4">
-              {/* WhatsApp Message Type Selector */}
-              <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+              {/* Type Switcher */}
+              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
                 <button
                   type="button"
                   onClick={() => handleSwitchWhatsAppType('first_touch')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all cursor-pointer ${
                     whatsAppType === 'first_touch'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>1. First Touch (Zero Fees & No PDF)</span>
+                  1. First Cold Touch (No Fee, No PDF)
                 </button>
-
                 <button
                   type="button"
                   onClick={() => handleSwitchWhatsAppType('follow_up')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all cursor-pointer ${
                     whatsAppType === 'follow_up'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span>2. Follow-Up (Deliver Audit Pitch)</span>
+                  2. Follow-Up (Deliver Audit & Pitch)
                 </button>
               </div>
 
-              {whatsAppType === 'first_touch' && (
-                <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>
-                    Simple conversational icebreaker: does NOT mention any fee, pricing, or unsolicited PDF. High reply rate!
-                  </span>
-                </div>
-              )}
+              {/* Messaging rule notice */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  {whatsAppType === 'first_touch' ? (
+                    <>
+                      <strong>Non-Intrusive Cold Touch:</strong> This message does <em>not</em> include any fee information and does <em>not</em> attach an unsolicited PDF report. It checks whether the business is currently taking on new clients.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Audit Delivery:</strong> Sent after the prospect replies. Mentions the 3 quick fixes discovered in their Google Maps ranking.
+                    </>
+                  )}
+                </p>
+              </div>
 
+              {/* Phone number */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Recipient WhatsApp / Mobile Phone
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Recipient WhatsApp Number
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-emerald-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
-                    placeholder="e.g. +91 98765 43210 or (512) 555-0199"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+                    placeholder="+91 98765 43210 or (512) 555-0199"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
-                {recipientPhone && (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    WhatsApp click-to-chat target: <code className="text-emerald-400 font-mono">+{getCleanPhoneDigits(recipientPhone)}</code>
-                  </p>
-                )}
               </div>
 
+              {/* Message Box */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     WhatsApp Message Text
                   </label>
                   <button
+                    type="button"
                     onClick={() => handleCopy(whatsAppMessage)}
-                    className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200"
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? 'Copied!' : 'Copy'}</span>
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copied ? 'Copied!' : 'Copy Text'}</span>
                   </button>
                 </div>
                 <textarea
-                  rows={5}
+                  rows={4}
                   value={whatsAppMessage}
                   onChange={(e) => setWhatsAppMessage(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-sans focus:outline-none focus:border-emerald-500 leading-relaxed"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white leading-relaxed font-sans"
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+              {/* WhatsApp Action Buttons */}
+              <div className="pt-2 flex items-center gap-3">
                 <button
-                  onClick={() => recordOutreach('whatsapp')}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-                >
-                  Mark as Sent (Without Launching)
-                </button>
-
-                <button
+                  type="button"
                   onClick={handleLaunchWhatsApp}
-                  disabled={!recipientPhone}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-900/40 transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>Launch WhatsApp Web & Send</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Email Channel */
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Recipient Email
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    value={recipientEmail}
-                    onChange={(e) => setRecipientEmail(e.target.value)}
-                    placeholder="e.g. contact@business.com"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                {!recipientEmail && (
-                  <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    No email listed on Google Maps. Enter manually or click to open website.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Subject Line
-                </label>
-                <input
-                  type="text"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 font-medium"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    Conversational Cold Email Body
-                  </label>
-                  <button
-                    onClick={() => handleCopy(emailBody)}
-                    className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200"
-                  >
-                    {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? 'Copied!' : 'Copy'}</span>
-                  </button>
-                </div>
-                <textarea
-                  rows={7}
-                  value={emailBody}
-                  onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-blue-500 leading-relaxed"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
-                <button
-                  onClick={() => recordOutreach('email')}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-                >
-                  Mark as Sent (Without Launching)
-                </button>
-
-                <button
-                  onClick={handleLaunchEmailClient}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-900/40 transition-all active:scale-95"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Open in Email App & Send</span>
+                  <span>Open in WhatsApp Web / App</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Quick Reaction & Outcome Logger */}
-          <div className="mt-6 pt-5 border-t border-slate-800">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Log Prospect Reaction & Outcomes
+          {/* EMAIL TAB */}
+          {activeChannel === 'email' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Recipient Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="contact@business.com"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Email Subject
+                </label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Email Body
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(emailBody)}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copied ? 'Copied!' : 'Copy Body'}</span>
+                  </button>
+                </div>
+                <textarea
+                  rows={6}
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white leading-relaxed font-sans"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleLaunchEmailClient}
+                  className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Launch Default Email Client (mailto)</span>
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+          )}
+
+          {/* Quick Lead Journey Status Transitions */}
+          <div className="pt-4 border-t border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+              Update Response State in CRM:
+            </span>
+            <div className="grid grid-cols-3 gap-2">
               <button
+                type="button"
                 onClick={handleMarkReplied}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all"
+                className="py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold border border-purple-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>Mark as "Replied / In Dialogue"</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                <span>Client Replied</span>
               </button>
 
               <button
-                onClick={handleMarkWon}
-                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all shadow-sm"
+                type="button"
+                onClick={handleMarkMeetingBooked}
+                className="py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Mark as "Won Deal" 🏆</span>
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                <span>Call Booked</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleMarkWon}
+                className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Trophy className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Deal Won! 🎉</span>
               </button>
             </div>
           </div>

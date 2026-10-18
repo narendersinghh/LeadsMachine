@@ -59,74 +59,74 @@ export const JourneyDrawer: React.FC<JourneyDrawerProps> = ({ lead, onClose, set
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'audit':
-        return <FileText className="w-4 h-4 text-orange-400" />;
+        return <FileText className="w-4 h-4 text-orange-600" />;
       case 'email':
-        return <Send className="w-4 h-4 text-blue-400" />;
+        return <Send className="w-4 h-4 text-blue-600" />;
       case 'whatsapp':
-        return <MessageSquare className="w-4 h-4 text-emerald-400" />;
+        return <MessageSquare className="w-4 h-4 text-emerald-600" />;
       case 'status_change':
-        return <CheckCircle2 className="w-4 h-4 text-amber-400" />;
+        return <CheckCircle2 className="w-4 h-4 text-purple-600" />;
       case 'note':
-        return <StickyNote className="w-4 h-4 text-purple-400" />;
+        return <StickyNote className="w-4 h-4 text-amber-600" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock className="w-4 h-4 text-slate-500" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-xs flex justify-end">
-      <div className="w-full max-w-lg bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-xs flex justify-end">
+      <div className="w-full max-w-lg bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
+            <div className="p-2 rounded-xl bg-orange-100 text-orange-700 border border-orange-200">
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-100 text-sm">{lead.name}</h3>
-              <p className="text-xs text-slate-400">Lead Journey & Activity Log</p>
+              <h3 className="font-bold text-slate-900 text-sm font-['Outfit']">{lead.name}</h3>
+              <p className="text-xs text-slate-500">Lead Journey & Activity Log</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Lead Summary Mini Card */}
-        <div className="p-4 bg-slate-950/60 border-b border-slate-800 text-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="text-slate-400">Current Pipeline Stage:</span>
-            <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-bold capitalize">
+        <div className="p-4 bg-slate-50/70 border-b border-slate-200 text-xs space-y-1">
+          <div className="flex items-center justify-between text-slate-700">
+            <span className="text-slate-500 font-medium">Pipeline Stage:</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold capitalize border border-orange-200">
               {lead.status.replace('_', ' ')}
             </span>
           </div>
-          <div className="text-slate-400 truncate">
+          <div className="text-slate-600 truncate text-[11px]">
             📍 {lead.address || lead.city} • 📞 {lead.phone || 'No phone'}
           </div>
         </div>
 
         {/* Timeline Event List */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-white">
+          <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
             {lead.journey.map((event, idx) => (
               <div key={event.id || idx} className="relative group">
                 {/* Dot */}
-                <div className="absolute -left-6 mt-1 flex items-center justify-center w-5 h-5 rounded-full bg-slate-950 border-2 border-slate-700 group-hover:border-orange-500 transition-colors">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
+                <div className="absolute -left-6 mt-1 flex items-center justify-center w-5 h-5 rounded-full bg-white border-2 border-slate-300 group-hover:border-orange-500 transition-colors shadow-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
                 </div>
 
                 {/* Event Card */}
-                <div className="bg-slate-950/80 rounded-xl p-3.5 border border-slate-800 hover:border-slate-700 transition-all space-y-1">
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 hover:border-slate-300 transition-all space-y-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
                       {getEventIcon(event.type)}
                       <span>{event.title}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[10px] text-slate-400">
                       {new Date(event.timestamp).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -136,12 +136,10 @@ export const JourneyDrawer: React.FC<JourneyDrawerProps> = ({ lead, onClose, set
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">{event.description}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{event.description}</p>
 
-                  <div className="pt-1 flex items-center justify-between text-[10px] text-slate-500">
-                    <span className="uppercase font-semibold tracking-wider text-slate-400">
-                      Stage: {event.stage}
-                    </span>
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider pt-0.5">
+                    Stage: {event.stage}
                   </div>
                 </div>
               </div>
@@ -149,23 +147,23 @@ export const JourneyDrawer: React.FC<JourneyDrawerProps> = ({ lead, onClose, set
           </div>
         </div>
 
-        {/* Add Note Form */}
-        <form onSubmit={handleAddNote} className="p-4 bg-slate-950 border-t border-slate-800">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-            Add Journey Note / Update
+        {/* Add Note Input Bar */}
+        <form onSubmit={handleAddNote} className="p-4 bg-slate-50 border-t border-slate-200">
+          <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            Log Internal Lead Note / Call Summary
           </label>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <input
               type="text"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              placeholder="e.g. Spoke with owner, sent proposal PDF..."
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-orange-500"
+              placeholder="e.g. Spoke to owner Mike; follow up Friday at 2 PM..."
+              className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
             />
             <button
               type="submit"
               disabled={!noteText.trim()}
-              className="px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs disabled:opacity-50"
+              className="p-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 transition-all cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4" />
             </button>

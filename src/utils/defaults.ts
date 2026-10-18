@@ -11,27 +11,9 @@ export const DEFAULT_SETTINGS: AgencySettings = {
   brandColorPrimary: '#f97316', // Tactical Amber/Orange
   brandColorAccent: '#e11d48', // Crimson Fire
   fontFamily: 'Plus Jakarta Sans',
-  yearlyFee: 35000, // in INR
-  monthlyFee: 3500, // in INR
-  currency: '₹', // Default to INR per user specification
-  industryLeadValues: {
-    roofing: 25000,
-    plumbing: 3500,
-    hvac: 18000,
-    dental: 12000,
-    dentist: 12000,
-    legal: 25000,
-    lawyer: 25000,
-    medspa: 8500,
-    solar: 35000,
-    auto: 4500,
-    electrician: 3000,
-    construction: 50000,
-    realtor: 40000,
-    chiropractor: 6000,
-    landscaping: 7500,
-    general: 5000,
-  },
+  yearlyFee: 35000, // in INR default
+  monthlyFee: 3500, // in INR default
+  currency: '₹', // Default to INR
   activePromptId: 'prompt-default-audit-roi',
   defaultEmailSignature: 'Best regards,\nGrowth Partner | Leads AK47 Machine\nhttps://leadsak47.com',
   defaultWhatsAppGreeting: 'Hi! Quick question regarding your Google Maps listing.',
@@ -45,11 +27,12 @@ export const DEFAULT_SETTINGS: AgencySettings = {
 
   activeAIProvider: 'gemini',
   providerConfigs: {
-    gemini: { model: 'gemini-3.8-flash' },
-    openai: { model: 'gpt-4o' },
-    claude: { model: 'claude-3-5-sonnet-20241022' },
-    openrouter: { model: 'anthropic/claude-3.5-sonnet' },
+    gemini: { model: 'gemini-3.8-flash', customModel: '' },
+    openai: { model: 'gpt-4o', customModel: '' },
+    claude: { model: 'claude-3-5-sonnet-20241022', customModel: '' },
+    openrouter: { model: 'anthropic/claude-3.5-sonnet', customModel: '' },
   },
+  githubRepo: 'narendersinghh/LeadsMachine',
 };
 
 export const DEFAULT_PROMPTS: AuditPrompt[] = [
@@ -67,14 +50,14 @@ Google Rating: {{rating}} ({{reviews_count}} reviews)
 Phone: {{phone}}
 
 Agency Pricing:
-Annual Fee: {{currency}}{{annual_fee}}
-Assumed Average Converted Client Value: {{currency}}{{lead_value}}
+Annual Retainer: {{currency}}{{annual_fee}}
 
-INSTRUCTIONS:
-1. Identify 4 critical negative points (Google Maps Search ranking signals missing, On-page SEO deficiencies, Mobile/Speed friction, and Conversion leaks).
-2. Compute the exact break-even ROI formula: Show that getting just N closed clients completely offsets the entire {{currency}}{{annual_fee}} yearly fee.
-3. Outline a 3-phase 90-day action plan to dominate the local Google 3-pack.
-4. Draft a warm initial Cold Email and a conversational WhatsApp message (first touch without mentioning fees or unsolicited files).`,
+CRITICAL INSTRUCTIONS:
+1. Automatically estimate the realistic average converted customer ticket value for this specific business niche and location in currency {{currency}} based on local market rates.
+2. Identify 4 critical negative points (Google Maps Search ranking signals missing, On-page SEO deficiencies, Mobile/Speed friction, and Conversion leaks).
+3. Compute the exact break-even ROI formula: Show that getting just N closed clients completely offsets the entire {{currency}}{{annual_fee}} yearly fee.
+4. Outline a 3-phase 90-day action plan to dominate the local Google 3-pack.
+5. Draft a warm initial Cold Email and a conversational WhatsApp message (first touch without mentioning fees or unsolicited files).`,
     tags: ['Negative Audit', 'ROI Break-Even', 'Local SEO', 'Default'],
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -84,6 +67,7 @@ INSTRUCTIONS:
     description: 'Highlights how top 3 Google Maps competitors are draining customer calls, with high-urgency conversion copy.',
     isDefault: false,
     userTemplate: `Analyze why {{business_name}} in {{location}} is getting outranked by local competitors in the Google Maps 3-Pack.
+Automatically calculate their industry lead value in {{currency}}.
 Focus heavily on lost call volume, missing LocalBusiness schema, thin location pages, and negative friction on mobile.
 Prove how capturing back just {{leads_needed}} customer jobs pays for our {{currency}}{{annual_fee}} yearly system.`,
     tags: ['Aggressive', 'Competitor Analysis', 'High Urgency'],
@@ -95,7 +79,7 @@ Prove how capturing back just {{leads_needed}} customer jobs pays for our {{curr
     description: 'Polite, data-backed technical diagnostic tailored for medical, legal, and professional practices.',
     isDefault: false,
     userTemplate: `Generate an executive diagnostic memo for {{business_name}}.
-Adopt a respectful, high-level consultant tone. Focus on patient/client acquisition efficiency, Google Maps trust signals, and demonstrate that a single case/patient value ({{currency}}{{lead_value}}) pays for the full yearly optimization fee.`,
+Adopt a respectful, high-level consultant tone. Automatically calculate their average patient or case value in {{currency}}. Focus on trust signals and demonstrate that just 1 or 2 closed clients completely covers the yearly fee.`,
     tags: ['Medical/Legal', 'Consultative', 'Executive'],
     createdAt: '2026-03-01T00:00:00.000Z',
   },
@@ -183,7 +167,7 @@ export const INITIAL_LEADS: Lead[] = [
       ],
       pitch: {
         headline: 'How 10 Converted Plumbing Jobs Totally Pays For Your Entire Yearly Retainer',
-        body: 'At an estimated ticket value of ₹3,500 for plumbing repairs, converting just 10 extra emergency or replacement jobs throughout the entire year generates ₹35,000—completely covering our entire ₹35,000 annual fee. Every client after job #10 is 100% pure profit.',
+        body: 'At an AI-estimated ticket value of ₹3,500 for plumbing repairs in this market, converting just 10 extra emergency or replacement jobs throughout the entire year generates ₹35,000—completely covering our entire ₹35,000 annual fee. Every client after job #10 is 100% pure profit.',
         estimatedLeadValue: 3500,
         leadsNeededToBreakEven: 10,
         yearlyFee: 35000,
@@ -289,7 +273,7 @@ export const INITIAL_LEADS: Lead[] = [
       ],
       pitch: {
         headline: 'Just 2 Roof Replacement Jobs Pays For Your Entire Yearly Agency Investment',
-        body: 'With an estimated residential roof replacement ticket of ₹25,000+, closing literally two additional clients from Google Maps pays for our full ₹35,000 annual fee with surplus profit.',
+        body: 'With an AI-estimated residential roof replacement ticket of ₹25,000+, closing literally two additional clients from Google Maps pays for our full ₹35,000 annual fee with surplus profit.',
         estimatedLeadValue: 25000,
         leadsNeededToBreakEven: 2,
         yearlyFee: 35000,
@@ -371,39 +355,29 @@ export const INITIAL_LEADS: Lead[] = [
 
 export const APP_RELEASES: AppRelease[] = [
   {
-    version: 'v1.2.0',
+    version: 'v1.3.0',
     releaseDate: '2026-10-18',
-    title: 'SaaS Left Navigation & Multi-AI Engine Release',
+    title: 'Hybrid Light UI & 1-Click Web Installer',
     isLatest: true,
     changes: [
-      'Added full collapsible SaaS left side panel navigation with status indicators',
-      'Configurable currency in settings with ₹ (INR) as default',
-      'Zero-fee, zero-PDF conversational first touch for WhatsApp & Email outreach',
-      'New "AI Connection" hub supporting Google Gemini, OpenAI ChatGPT, Anthropic Claude, and OpenRouter',
-      'New "Updates" hub with GitHub automatic update checking and safe in-place upgrades without data loss',
-      'Exportable lightweight Shared Hosting (PHP & MySQL/SQLite) deployment kit with cPanel guide',
+      'Polished Light Theme workspace with high-contrast tactical dark sidebar',
+      'AI automatically estimates client lead values by niche & location in real time',
+      'Flexible exact number input for Google Maps scraper quantity',
+      'Select & Bulk Delete / Trash lead management in Journey CRM',
+      'Custom Model Name text field and endpoint configuration for all AI providers',
+      'Official repository linked to narendersinghh/LeadsMachine with auto-updater',
+      'Super simplified 1-Click Web Installer (install.php) for cPanel & shared hosting',
     ],
   },
   {
-    version: 'v1.1.0',
-    releaseDate: '2026-10-10',
-    title: 'Precision ROI Break-Even Engine',
+    version: 'v1.2.0',
+    releaseDate: '2026-10-18',
+    title: 'SaaS Left Navigation & Multi-AI Gateway',
     changes: [
-      'Automated Google Maps scraping with 10, 20, 30, 40, 50, 100 listing limits',
-      'Missing phone enrichment scraper from business websites',
-      'Negative SEO audit engine highlighting 3-Pack rank deficiencies',
-      'Executive printable/downloadable PDF report generator with custom agency branding',
-      'Turnkey website proposal generator for listings without websites',
-    ],
-  },
-  {
-    version: 'v1.0.0',
-    releaseDate: '2026-09-28',
-    title: 'Initial Core Release',
-    changes: [
-      'Core Leads AK47 pipeline architecture',
-      '5-stage CRM journey tracking',
-      'Multi-channel outreach drafts (Email + WhatsApp wa.me links)',
+      'SaaS left side panel navigation',
+      'Configurable currency with ₹ (INR) default',
+      'Conversational zero-fee, zero-PDF first touch WhatsApp message',
+      'Multi-AI provider setup for Gemini, OpenAI, Claude, and OpenRouter',
     ],
   },
 ];

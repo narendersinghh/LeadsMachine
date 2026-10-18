@@ -218,51 +218,34 @@ app.post('/api/leads/audit-and-pitch', async (req: Request, res: Response) => {
     }
 
     const agency = agencySettings || {
-      agencyName: 'Apex Growth Digital',
-      yearlyFee: 3600,
-      monthlyFee: 400,
-      currency: '$',
-      slogan: 'Hyper-Local SEO & Customer Lead Systems',
+      agencyName: 'AK47 Growth Agency',
+      yearlyFee: 35000,
+      monthlyFee: 3500,
+      currency: '₹',
+      slogan: 'Precision Google Maps 3-Pack Ranking & Lead Generation',
     };
 
-    // Calculate or infer lead value for their industry
-    const industryKey = (lead.category || '').toLowerCase();
-    let assumedLeadValue = 850; // default average conversion value
-
-    const leadValueTable: Record<string, number> = agency.industryLeadValues || {
-      roofing: 5500,
-      plumbing: 750,
-      hvac: 3200,
-      dental: 1800,
-      dentist: 1800,
-      legal: 4500,
-      lawyer: 4500,
-      medspa: 950,
-      solar: 6500,
-      auto: 600,
-      electrician: 650,
-      construction: 6000,
-      realtor: 7000,
-      chiropractor: 1200,
-    };
-
-    for (const [k, val] of Object.entries(leadValueTable)) {
-      if (industryKey.includes(k) || (lead.name || '').toLowerCase().includes(k)) {
-        assumedLeadValue = val;
-        break;
-      }
-    }
-
-    const yearlyFee = Number(agency.yearlyFee) || 3600;
-    const leadsNeeded = Math.max(1, Math.ceil(yearlyFee / assumedLeadValue));
+    const currency = agency.currency || '₹';
+    const yearlyFee = Number(agency.yearlyFee) || 35000;
+    const monthlyFee = Number(agency.monthlyFee) || Math.round(yearlyFee / 12);
 
     const systemInstruction = `You are an elite Local SEO Technical Auditor & High-Converting Agency Strategist.
 You are generating a comprehensive, highly persuasive SEO Audit & Service Pitch Report for a business owner.
 Agency Name: "${agency.agencyName}"
-Agency Annual Fee: ${agency.currency || '$'}${yearlyFee.toLocaleString()}
-Agency Monthly Retainer: ${agency.currency || '$'}${(agency.monthlyFee || Math.round(yearlyFee / 12)).toLocaleString()}
-Assumed Client's Average Converted Customer Value: ${agency.currency || '$'}${assumedLeadValue.toLocaleString()}
-Critical Break-even Math: Exactly ${leadsNeeded} converted leads covers the ENTIRE ${agency.currency || '$'}${yearlyFee.toLocaleString()} yearly fee. Any leads beyond that are 100% pure profit!
+Agency Annual Fee: ${currency}${yearlyFee.toLocaleString()}
+Agency Monthly Retainer: ${currency}${monthlyFee.toLocaleString()}
+Currency Symbol: "${currency}"
+
+AUTOMATIC REVENUE VALUATION:
+You must automatically research and estimate this specific business's average converted customer transaction/lifetime ticket value in currency "${currency}" based on their specific niche ("${lead.category}"), their website services, and their location ("${lead.city}, ${lead.address}").
+For example:
+- In ₹ (INR): Residential plumbing job ~₹2,500 - ₹5,000; Dental implant/smile makeover ~₹15,000 - ₹35,000; Commercial roofing ~₹30,000 - ₹75,000; Car detailing ~₹3,500 - ₹8,000; Legal consultation/case ~₹25,000 - ₹60,000.
+- In $ (USD): Plumbing ~$750 - $1,500; Roofing ~$5,000 - $10,000; Dental ~$1,500 - $3,000.
+Assign this estimated lead value to "estimatedLeadValue".
+
+CRITICAL BREAK-EVEN MATH:
+Calculate: leadsNeededToBreakEven = Math.ceil(${yearlyFee} / estimatedLeadValue) (minimum 1).
+Prove that capturing just that small number of converted leads completely pays for the entire ${currency}${yearlyFee.toLocaleString()} yearly fee. Any leads beyond that are 100% pure profit!
 
 Target Business:
 - Name: ${lead.name}
@@ -274,7 +257,7 @@ Target Business:
 
 AUDIT FOCUS:
 Highlight critical negative points where the business is currently losing money, failing to rank in Google Maps 3-pack, suffering slow mobile speeds, missing local schema markup, lacking geo-targeted landing pages, or losing calls to local competitors.
-Then, build an irresistible ROI pitch proving how recovering just ${leadsNeeded} customer leads completely pays for the service.
+Then, build an irresistible ROI pitch proving how recovering just a small number of converted leads completely pays for the yearly service.
 
 OUTPUT FORMAT: Return STRICTLY JSON with this exact structure:
 {
@@ -310,12 +293,12 @@ OUTPUT FORMAT: Return STRICTLY JSON with this exact structure:
     }
   ],
   "pitch": {
-    "headline": "How Capturing Just ${leadsNeeded} Additional ${lead.category} Jobs Completely Covers Your Yearly Investment",
+    "headline": "How Capturing Just 3 to 5 Additional ${lead.category} Jobs Completely Covers Your Yearly Investment",
     "body": "Persuasive breakdown of the numbers explaining why working with ${agency.agencyName} is a zero-risk revenue multiplier.",
-    "estimatedLeadValue": ${assumedLeadValue},
-    "leadsNeededToBreakEven": ${leadsNeeded},
+    "estimatedLeadValue": 3500,
+    "leadsNeededToBreakEven": 5,
     "yearlyFee": ${yearlyFee},
-    "roiStatement": "At an estimated ticket value of ${agency.currency || '$'}${assumedLeadValue.toLocaleString()} per converted client, just ${leadsNeeded} closed customer(s) totally pays for your entire year of service.",
+    "roiStatement": "At an estimated ticket value of ${currency}3,500 per converted client, just 5 closed customer(s) totally pays for your entire year of service.",
     "phases": [
       {
         "phase": "Phase 1: Quick Wins",
@@ -365,6 +348,9 @@ OUTPUT FORMAT: Return STRICTLY JSON with this exact structure:
       throw new Error('Failed to parse audit results from AI');
     }
 
+    const estLeadVal = Number(parsed.pitch?.estimatedLeadValue) || 3500;
+    const leadsNeeded = Number(parsed.pitch?.leadsNeededToBreakEven) || Math.max(1, Math.ceil(yearlyFee / estLeadVal));
+
     const auditReport = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       businessName: lead.name,
@@ -375,14 +361,14 @@ OUTPUT FORMAT: Return STRICTLY JSON with this exact structure:
       mobileSpeedScore: parsed.mobileSpeedScore || 48,
       summary: parsed.summary || 'Comprehensive website and local SEO audit report.',
       negativePoints: parsed.negativePoints || [],
-      pitch: parsed.pitch || {
-        headline: `How Just ${leadsNeeded} Converted Clients Pays For Your Entire Yearly Retainer`,
-        body: `Working with ${agency.agencyName} generates positive cash flow with minimal conversion threshold.`,
-        estimatedLeadValue: assumedLeadValue,
+      pitch: {
+        headline: parsed.pitch?.headline || `How Just ${leadsNeeded} Converted Clients Pays For Your Entire Yearly Retainer`,
+        body: parsed.pitch?.body || `Working with ${agency.agencyName} generates positive cash flow with minimal conversion threshold.`,
+        estimatedLeadValue: estLeadVal,
         leadsNeededToBreakEven: leadsNeeded,
         yearlyFee,
-        roiStatement: `Just ${leadsNeeded} converted jobs pays for the entire year.`,
-        phases: [],
+        roiStatement: parsed.pitch?.roiStatement || `At an estimated client value of ${currency}${estLeadVal.toLocaleString()}, just ${leadsNeeded} converted job(s) completely covers your entire ${currency}${yearlyFee.toLocaleString()} yearly fee.`,
+        phases: parsed.pitch?.phases || [],
       },
       generatedWithPromptId: req.body.promptId || 'default-prompt',
       generatedAt: new Date().toISOString(),

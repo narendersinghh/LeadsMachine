@@ -37,7 +37,7 @@ export interface ServicePhase {
 export interface PitchDetails {
   headline: string;
   body: string;
-  estimatedLeadValue: number;
+  estimatedLeadValue: number; // Calculated automatically by AI based on industry & city
   leadsNeededToBreakEven: number;
   yearlyFee: number;
   roiStatement: string;
@@ -117,14 +117,13 @@ export interface AuditPrompt {
   createdAt: string;
 }
 
-export interface AIProviderConfig {
-  id: 'gemini' | 'openai' | 'claude' | 'openrouter';
-  name: string;
-  model: string;
+export interface ProviderSetting {
   apiKey?: string;
-  status: 'connected' | 'unconfigured' | 'testing';
+  model?: string;
+  customModel?: string;
   baseUrl?: string;
-  docsUrl: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 export interface AgencySettings {
@@ -141,7 +140,6 @@ export interface AgencySettings {
   yearlyFee: number;
   monthlyFee: number;
   currency: string; // Defaults to '₹'
-  industryLeadValues: Record<string, number>;
   uploadedProposalFile?: {
     name: string;
     size: number;
@@ -160,7 +158,8 @@ export interface AgencySettings {
 
   // Active AI Provider
   activeAIProvider: 'gemini' | 'openai' | 'claude' | 'openrouter';
-  providerConfigs: Record<string, { apiKey?: string; model?: string }>;
+  providerConfigs: Record<string, ProviderSetting>;
+  githubRepo: string;
 }
 
 export interface AppRelease {
